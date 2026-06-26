@@ -16,7 +16,8 @@ window.ModuleQuiz = (function () {
   }
 
   function start() {
-    order = shuffle(window.QUIZ_QUESTIONS.map((_, i) => i));
+    const perRound = window.QUIZ_PER_ROUND || window.QUIZ_QUESTIONS.length;
+    order = shuffle(window.QUIZ_QUESTIONS.map((_, i) => i)).slice(0, perRound);
     idx = 0; score = 0; answered = false;
     renderQuestion();
   }
@@ -26,7 +27,7 @@ window.ModuleQuiz = (function () {
     const q = window.QUIZ_QUESTIONS[order[idx]];
     view.innerHTML = `
       <h2 class="module-title">Knowledge Quiz</h2>
-      <p class="module-sub">Test your CPR knowledge. You'll get an explanation after each answer.</p>
+      <p class="module-sub">All ${window.QUIZ_QUESTIONS.length} questions in random order. You'll get an explanation after each answer.</p>
       <div class="card">
         <div class="q-progress">Question ${idx + 1} of ${order.length} · Score: ${score}</div>
         <div class="q-text">${q.q}</div>

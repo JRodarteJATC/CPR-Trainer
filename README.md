@@ -4,7 +4,7 @@ A browser-based app to **train and practice hands-only and standard CPR**. No in
 
 1. **Compression Metronome** — a 100–120 BPM audio + visual pacer, plus a **Tap Practice** trainer where you press **Spacebar** for each compression and **B** for each breath. It measures your live rate, tracks 30:2 cycles, and tells you to push faster/slower.
 2. **Step-by-Step Guide** — the full adult CPR sequence: scene safety → check → call → compress → breaths → AED.
-3. **Knowledge Quiz** — multiple-choice questions with instant explanations and scoring.
+3. **Knowledge Quiz** — all 50 First Aid questions (4 choices each) in random order, with instant explanations and scoring.
 4. **Scenario Simulator** — timed emergency scenarios where your choices have consequences and you get feedback.
 
 > ⚠️ **This is a practice and study aid, not a substitute for certified, hands-on CPR training.** Guidelines here follow the 2020 AHA adult Basic Life Support recommendations, but you should take an accredited course (AHA, Red Cross, or equivalent) to be qualified to respond to a real emergency. In a real emergency, call your local emergency number immediately.

@@ -16,6 +16,9 @@ window.ModuleMetronome = (function () {
   let totalBreaths = 0;
   let scoredComps = 0;     // compressions with a measurable rate (2nd tap onward)
   let inZoneComps = 0;     // those that landed in the 100–120 target zone
+  let setTimes = [];       // timestamps of completed 30:2 sets (for sets/min)
+  let totalSets = 0;       // completed sets this session
+  const SETS_PER_MIN_TARGET = 2; // must complete at least this many sets each minute
   let keyHandler = null;
 
   function ensureAudio() {
@@ -117,7 +120,7 @@ window.ModuleMetronome = (function () {
         <h3 style="margin:0 0 4px;">Tap Practice</h3>
         <p class="cue" style="margin:0 0 16px;">
           Tap <strong>Spacebar</strong> for each compression and <strong>B</strong> for each breath.
-          Do 30 compressions, then 2 breaths. We'll measure your rate live.
+          Do 30 compressions, then 2 breaths. Goal: complete <strong>at least 2 full sets every minute</strong>.
         </p>
         <div class="kbd-row">
           <button class="key-btn" id="compKey"><span class="key-cap">Space</span><span class="key-lab">Compression</span></button>
@@ -128,6 +131,7 @@ window.ModuleMetronome = (function () {
           <div class="pstat"><div class="pstat-num" id="compNum">0<span class="pstat-of">/30</span></div><div class="pstat-lab">compressions</div></div>
           <div class="pstat"><div class="pstat-num" id="breathNum">0<span class="pstat-of">/2</span></div><div class="pstat-lab">breaths</div></div>
           <div class="pstat"><div class="pstat-num" id="accuracyNum">—<span class="pstat-of">%</span></div><div class="pstat-lab">in-zone score</div></div>
+          <div class="pstat"><div class="pstat-num" id="setsMin">0<span class="pstat-of">/min</span></div><div class="pstat-lab">sets (last 60s)</div></div>
         </div>
         <div class="rate-feedback" id="rateFeedback">Tap Spacebar to begin.</div>
         <div class="controls" style="margin-top:6px;">
@@ -151,6 +155,7 @@ window.ModuleMetronome = (function () {
       compNum: view.querySelector('#compNum'),
       breathNum: view.querySelector('#breathNum'),
       accuracyNum: view.querySelector('#accuracyNum'),
+      setsMin: view.querySelector('#setsMin'),
       rateFeedback: view.querySelector('#rateFeedback'),
       practiceReset: view.querySelector('#practiceReset'),
       practiceTotals: view.querySelector('#practiceTotals'),
@@ -232,6 +237,10 @@ window.ModuleMetronome = (function () {
       practiceBreaths++;
       els.breathNum.innerHTML = `${Math.min(practiceBreaths, 2)}<span class="pstat-of">/2</span>`;
       if (practiceBreaths >= 2) {
+        // A full 30:2 set is complete — record it for the sets/min pace.
+        totalSets++;
+        setTimes.push(performance.now());
+        const perMin = updateSetsPerMin();
         // Cycle complete — reset for the next round of 30:2.
         setTimeout(() => {
           practiceComps = 0;
@@ -239,8 +248,10 @@ window.ModuleMetronome = (function () {
           tapTimes = [];
           els.compNum.innerHTML = `0<span class="pstat-of">/30</span>`;
           els.breathNum.innerHTML = `0<span class="pstat-of">/2</span>`;
-          els.rateFeedback.className = 'rate-feedback good';
-          els.rateFeedback.innerHTML = '✅ <strong>Cycle complete!</strong> Resume compressions.';
+          els.rateFeedback.className = perMin >= SETS_PER_MIN_TARGET ? 'rate-feedback good' : 'rate-feedback warn';
+          els.rateFeedback.innerHTML = perMin >= SETS_PER_MIN_TARGET
+            ? `✅ <strong>Set complete!</strong> ${perMin} sets in the last minute — on pace. Resume compressions.`
+            : `⏱ <strong>Set complete</strong> — only ${perMin} set(s) this minute. Speed up to hit at least ${SETS_PER_MIN_TARGET}/min. Resume compressions.`;
         }, 250);
       }
     }
@@ -285,6 +296,15 @@ window.ModuleMetronome = (function () {
     els.accuracyNum.style.color = color;
   }
 
+  function updateSetsPerMin() {
+    const cutoff = performance.now() - 60000;
+    setTimes = setTimes.filter((t) => t >= cutoff); // keep only the last 60s
+    const perMin = setTimes.length;
+    els.setsMin.innerHTML = `${perMin}<span class="pstat-of">/min</span>`;
+    els.setsMin.style.color = perMin >= SETS_PER_MIN_TARGET ? 'var(--good)' : 'var(--warn)';
+    return perMin;
+  }
+
   function scoreGrade(pct) {
     if (pct >= 90) return 'Excellent';
     if (pct >= 80) return 'Great';
@@ -294,7 +314,7 @@ window.ModuleMetronome = (function () {
   }
 
   function updateTotals() {
-    let line = `Session: ${totalComps} compressions · ${totalBreaths} breaths`;
+    let line = `Session: ${totalComps} compressions · ${totalBreaths} breaths · ${totalSets} sets`;
     if (scoredComps > 0) {
       const pct = Math.round((inZoneComps / scoredComps) * 100);
       line += ` · ${inZoneComps}/${scoredComps} in zone (${scoreGrade(pct)})`;
@@ -311,12 +331,16 @@ window.ModuleMetronome = (function () {
     totalBreaths = 0;
     scoredComps = 0;
     inZoneComps = 0;
+    setTimes = [];
+    totalSets = 0;
     if (els.liveRate) {
       els.liveRate.textContent = '—';
       els.compNum.innerHTML = `0<span class="pstat-of">/30</span>`;
       els.breathNum.innerHTML = `0<span class="pstat-of">/2</span>`;
       els.accuracyNum.innerHTML = `—<span class="pstat-of">%</span>`;
       els.accuracyNum.style.color = '';
+      els.setsMin.innerHTML = `0<span class="pstat-of">/min</span>`;
+      els.setsMin.style.color = '';
       els.rateFeedback.className = 'rate-feedback';
       els.rateFeedback.textContent = 'Tap Spacebar to begin.';
       updateTotals();
