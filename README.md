@@ -2,7 +2,7 @@
 
 A browser-based app to **train and practice hands-only and standard CPR**. No install, no build step — open `index.html` and go. Four modules:
 
-1. **Compression Metronome** — a 100–120 BPM audio + visual pacer so you can practice compression rhythm and depth timing.
+1. **Compression Metronome** — a 100–120 BPM audio + visual pacer, plus a **Tap Practice** trainer where you press **Spacebar** for each compression and **B** for each breath. It measures your live rate, tracks 30:2 cycles, and tells you to push faster/slower.
 2. **Step-by-Step Guide** — the full adult CPR sequence: scene safety → check → call → compress → breaths → AED.
 3. **Knowledge Quiz** — multiple-choice questions with instant explanations and scoring.
 4. **Scenario Simulator** — timed emergency scenarios where your choices have consequences and you get feedback.
