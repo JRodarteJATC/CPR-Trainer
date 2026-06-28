@@ -1,4 +1,6 @@
 // Compression metronome: Web Audio click + visual pulse + 30:2 cycle counter.
+// Tap Practice is a 2-set drill: complete two 30:2 sets, then a results popup
+// shows your final score and a full breakdown.
 window.ModuleMetronome = (function () {
   let audioCtx = null;
   let timer = null;
@@ -8,17 +10,19 @@ window.ModuleMetronome = (function () {
   let els = {};
 
   // ---- Tap-practice state ----
-  let practiceOn = false;
   let tapTimes = [];       // timestamps of recent compression taps
   let practiceComps = 0;   // compressions in current 30:2 set
   let practiceBreaths = 0; // breaths given in current breath window
-  let totalComps = 0;      // running total this session
+  let totalComps = 0;      // running total this drill
   let totalBreaths = 0;
   let scoredComps = 0;     // compressions with a measurable rate (2nd tap onward)
   let inZoneComps = 0;     // those that landed in the 100–120 target zone
-  let setTimes = [];       // timestamps of completed 30:2 sets (for sets/min)
-  let totalSets = 0;       // completed sets this session
-  const SETS_PER_MIN_TARGET = 2; // must complete at least this many sets each minute
+  let totalSets = 0;       // completed sets this drill
+  let drillStart = 0;      // timestamp of first compression
+  let lastCompTime = 0;    // timestamp of most recent compression
+  let drillComplete = false;
+  const DRILL_SETS = 2;        // drill ends after 2 full sets
+  const PACE_WINDOW = 60000;   // "2 sets per minute" = 2 sets within 60s
   let keyHandler = null;
 
   function ensureAudio() {
@@ -45,16 +49,11 @@ window.ModuleMetronome = (function () {
   function tick() {
     beatCount++;
     const inBreathWindow = beatCount > 30;
-    // Accent every 30th compression (end of a set).
     click(beatCount % 30 === 0);
     els.circle.classList.add('beat');
     setTimeout(() => els.circle.classList.remove('beat'), 90);
-
-    els.count.textContent = inBreathWindow
-      ? '🫁 2 rescue breaths'
-      : `Compression ${beatCount} / 30`;
-
-    if (beatCount >= 32) beatCount = 0; // 30 compressions + 2 "breath" beats, then reset
+    els.count.textContent = inBreathWindow ? '🫁 2 rescue breaths' : `Compression ${beatCount} / 30`;
+    if (beatCount >= 32) beatCount = 0;
   }
 
   function start() {
@@ -62,9 +61,8 @@ window.ModuleMetronome = (function () {
     ensureAudio();
     running = true;
     beatCount = 0;
-    const interval = 60000 / bpm;
     tick();
-    timer = setInterval(tick, interval);
+    timer = setInterval(tick, 60000 / bpm);
     els.startBtn.textContent = 'Stop';
     els.startBtn.classList.remove('secondary');
   }
@@ -86,7 +84,7 @@ window.ModuleMetronome = (function () {
   function setBpm(v) {
     bpm = v;
     els.rateVal.textContent = `${v} BPM`;
-    if (running) { // restart timer at new tempo without resetting the count display abruptly
+    if (running) {
       clearInterval(timer);
       timer = setInterval(tick, 60000 / bpm);
     }
@@ -117,10 +115,11 @@ window.ModuleMetronome = (function () {
       </div>
 
       <div class="card metro-wrap" id="practiceCard">
-        <h3 style="margin:0 0 4px;">Tap Practice</h3>
+        <h3 class="practice-head">🎯 Tap Practice Drill</h3>
         <p class="cue" style="margin:0 0 16px;">
           Tap <strong>Spacebar</strong> for each compression and <strong>B</strong> for each breath.
-          Do 30 compressions, then 2 breaths. Goal: complete <strong>at least 2 full sets every minute</strong>.
+          Do 30 compressions, then 2 breaths. Complete <strong>2 full sets within one minute</strong>,
+          then your score &amp; breakdown pop up.
         </p>
         <div class="kbd-row">
           <button class="key-btn" id="compKey"><span class="key-cap">Space</span><span class="key-lab">Compression</span></button>
@@ -131,13 +130,13 @@ window.ModuleMetronome = (function () {
           <div class="pstat"><div class="pstat-num" id="compNum">0<span class="pstat-of">/30</span></div><div class="pstat-lab">compressions</div></div>
           <div class="pstat"><div class="pstat-num" id="breathNum">0<span class="pstat-of">/2</span></div><div class="pstat-lab">breaths</div></div>
           <div class="pstat"><div class="pstat-num" id="accuracyNum">—<span class="pstat-of">%</span></div><div class="pstat-lab">in-zone score</div></div>
-          <div class="pstat"><div class="pstat-num" id="setsMin">0<span class="pstat-of">/min</span></div><div class="pstat-lab">sets (last 60s)</div></div>
+          <div class="pstat"><div class="pstat-num" id="setsNum">0<span class="pstat-of">/2</span></div><div class="pstat-lab">sets done</div></div>
         </div>
-        <div class="rate-feedback" id="rateFeedback">Tap Spacebar to begin.</div>
+        <div class="rate-feedback" id="rateFeedback">Tap Spacebar to begin the drill.</div>
         <div class="controls" style="margin-top:6px;">
-          <button class="btn ghost" id="practiceReset">Reset practice</button>
+          <button class="btn ghost" id="practiceReset">Reset drill</button>
         </div>
-        <p class="cue" id="practiceTotals">Session: 0 compressions · 0 breaths</p>
+        <p class="cue" id="practiceTotals">Drill: 0 compressions · 0 breaths · 0 / 2 sets</p>
       </div>`;
 
     els = {
@@ -148,14 +147,13 @@ window.ModuleMetronome = (function () {
       range: view.querySelector('#rateRange'),
       startBtn: view.querySelector('#metroStart'),
       resetBtn: view.querySelector('#metroReset'),
-      // practice refs
       compKey: view.querySelector('#compKey'),
       breathKey: view.querySelector('#breathKey'),
       liveRate: view.querySelector('#liveRate'),
       compNum: view.querySelector('#compNum'),
       breathNum: view.querySelector('#breathNum'),
       accuracyNum: view.querySelector('#accuracyNum'),
-      setsMin: view.querySelector('#setsMin'),
+      setsNum: view.querySelector('#setsNum'),
       rateFeedback: view.querySelector('#rateFeedback'),
       practiceReset: view.querySelector('#practiceReset'),
       practiceTotals: view.querySelector('#practiceTotals'),
@@ -173,16 +171,14 @@ window.ModuleMetronome = (function () {
       setBpm(110);
     });
 
-    // The on-screen keys also work as click/tap targets (mobile-friendly).
     els.compKey.addEventListener('click', registerCompression);
     els.breathKey.addEventListener('click', registerBreath);
     els.practiceReset.addEventListener('click', resetPractice);
 
-    // Global key handling for the practice trainer.
     keyHandler = (e) => {
-      if (e.repeat) return; // ignore auto-repeat from a held key
+      if (e.repeat) return;
       if (e.code === 'Space') {
-        e.preventDefault(); // don't scroll the page
+        e.preventDefault();
         registerCompression();
       } else if (e.key === 'b' || e.key === 'B') {
         registerBreath();
@@ -198,9 +194,9 @@ window.ModuleMetronome = (function () {
   }
 
   function registerCompression() {
-    practiceOn = true;
+    if (drillComplete) return; // drill finished — wait for reset
     const now = performance.now();
-    // Score this tap against the target zone using the interval since the last tap.
+    if (!drillStart) drillStart = now;
     if (tapTimes.length >= 1) {
       const interval = now - tapTimes[tapTimes.length - 1];
       const instRate = 60000 / interval;
@@ -208,8 +204,9 @@ window.ModuleMetronome = (function () {
       if (instRate >= 100 && instRate <= 120) inZoneComps++;
       updateAccuracy();
     }
+    lastCompTime = now;
     tapTimes.push(now);
-    if (tapTimes.length > 6) tapTimes.shift(); // keep recent taps only
+    if (tapTimes.length > 6) tapTimes.shift();
     practiceComps++;
     totalComps++;
     flashKey(els.compKey);
@@ -229,41 +226,36 @@ window.ModuleMetronome = (function () {
   }
 
   function registerBreath() {
-    practiceOn = true;
-    totalBreaths++;
+    if (drillComplete) return;
     flashKey(els.breathKey);
-    // Breaths only "count" toward the cycle once 30 compressions are done.
     if (practiceComps >= 30) {
+      totalBreaths++;
       practiceBreaths++;
       els.breathNum.innerHTML = `${Math.min(practiceBreaths, 2)}<span class="pstat-of">/2</span>`;
       if (practiceBreaths >= 2) {
-        // A full 30:2 set is complete — record it for the sets/min pace.
         totalSets++;
-        setTimes.push(performance.now());
-        const perMin = updateSetsPerMin();
-        // Cycle complete — reset for the next round of 30:2.
+        els.setsNum.innerHTML = `${totalSets}<span class="pstat-of">/2</span>`;
+        if (totalSets >= DRILL_SETS) {
+          finishDrill();
+          return;
+        }
+        // Reset for the next set.
         setTimeout(() => {
           practiceComps = 0;
           practiceBreaths = 0;
           tapTimes = [];
           els.compNum.innerHTML = `0<span class="pstat-of">/30</span>`;
           els.breathNum.innerHTML = `0<span class="pstat-of">/2</span>`;
-          els.rateFeedback.className = perMin >= SETS_PER_MIN_TARGET ? 'rate-feedback good' : 'rate-feedback warn';
-          els.rateFeedback.innerHTML = perMin >= SETS_PER_MIN_TARGET
-            ? `✅ <strong>Set complete!</strong> ${perMin} sets in the last minute — on pace. Resume compressions.`
-            : `⏱ <strong>Set complete</strong> — only ${perMin} set(s) this minute. Speed up to hit at least ${SETS_PER_MIN_TARGET}/min. Resume compressions.`;
-        }, 250);
+          els.rateFeedback.className = 'rate-feedback good';
+          els.rateFeedback.innerHTML = '✅ <strong>Set 1 complete!</strong> One more set to go — resume compressions.';
+        }, 200);
       }
+      updateTotals();
     }
-    updateTotals();
   }
 
   function updateRate() {
-    if (tapTimes.length < 2) {
-      els.liveRate.textContent = '—';
-      return;
-    }
-    // Average interval over the recent taps -> compressions per minute.
+    if (tapTimes.length < 2) { els.liveRate.textContent = '—'; return; }
     const intervals = [];
     for (let i = 1; i < tapTimes.length; i++) intervals.push(tapTimes[i] - tapTimes[i - 1]);
     const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
@@ -271,7 +263,7 @@ window.ModuleMetronome = (function () {
     els.liveRate.textContent = rate;
 
     const fb = els.rateFeedback;
-    if (practiceComps >= 30) return; // don't override the breath prompt
+    if (practiceComps >= 30) return;
     if (rate < 100) {
       fb.className = 'rate-feedback warn';
       fb.innerHTML = `⬆️ <strong>Push faster</strong> — ${rate}/min is below the 100–120 target.`;
@@ -285,24 +277,10 @@ window.ModuleMetronome = (function () {
   }
 
   function updateAccuracy() {
-    if (scoredComps === 0) {
-      els.accuracyNum.innerHTML = `—<span class="pstat-of">%</span>`;
-      return;
-    }
+    if (scoredComps === 0) { els.accuracyNum.innerHTML = `—<span class="pstat-of">%</span>`; return; }
     const pct = Math.round((inZoneComps / scoredComps) * 100);
     els.accuracyNum.innerHTML = `${pct}<span class="pstat-of">%</span>`;
-    // Colour the score: green ≥ 80%, amber ≥ 50%, otherwise red.
-    const color = pct >= 80 ? 'var(--good)' : pct >= 50 ? 'var(--warn)' : 'var(--accent-2)';
-    els.accuracyNum.style.color = color;
-  }
-
-  function updateSetsPerMin() {
-    const cutoff = performance.now() - 60000;
-    setTimes = setTimes.filter((t) => t >= cutoff); // keep only the last 60s
-    const perMin = setTimes.length;
-    els.setsMin.innerHTML = `${perMin}<span class="pstat-of">/min</span>`;
-    els.setsMin.style.color = perMin >= SETS_PER_MIN_TARGET ? 'var(--good)' : 'var(--warn)';
-    return perMin;
+    els.accuracyNum.style.color = pct >= 80 ? 'var(--good)' : pct >= 50 ? 'var(--warn)' : 'var(--accent-2)';
   }
 
   function scoreGrade(pct) {
@@ -314,16 +292,61 @@ window.ModuleMetronome = (function () {
   }
 
   function updateTotals() {
-    let line = `Session: ${totalComps} compressions · ${totalBreaths} breaths · ${totalSets} sets`;
-    if (scoredComps > 0) {
-      const pct = Math.round((inZoneComps / scoredComps) * 100);
-      line += ` · ${inZoneComps}/${scoredComps} in zone (${scoreGrade(pct)})`;
-    }
-    els.practiceTotals.textContent = line;
+    els.practiceTotals.textContent =
+      `Drill: ${totalComps} compressions · ${totalBreaths} breaths · ${totalSets} / ${DRILL_SETS} sets`;
+  }
+
+  // ---- Results popup ----
+  function finishDrill() {
+    drillComplete = true;
+    const elapsedMs = lastCompTime - drillStart;
+    const elapsedSec = Math.max(0.1, elapsedMs / 1000);
+    const pct = scoredComps ? Math.round((inZoneComps / scoredComps) * 100) : 0;
+    const grade = scoreGrade(pct);
+    const avgRate = Math.round((scoredComps) / (elapsedMs / 60000)); // comps per minute
+    const totalElapsed = (performance.now() - drillStart) / 1000;    // includes breaths
+    const onPace = (performance.now() - drillStart) <= PACE_WINDOW;
+    showResults({ pct, grade, avgRate, totalElapsed, onPace });
+  }
+
+  function showResults(r) {
+    const scoreColor = r.pct >= 80 ? 'var(--good)' : r.pct >= 50 ? 'var(--warn)' : 'var(--accent-2)';
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal-card">
+        <div class="modal-logo"></div>
+        <button class="modal-close" aria-label="Close">✕</button>
+        <div class="modal-emoji">${r.pct >= 80 ? '🏆' : r.pct >= 50 ? '💪' : '🚑'}</div>
+        <h2 class="modal-title">Drill Complete!</h2>
+        <div class="modal-score" style="color:${scoreColor}">${r.pct}<span>%</span></div>
+        <div class="modal-grade">${r.grade} · in-zone accuracy</div>
+
+        <div class="modal-breakdown">
+          <div class="brk-row"><span>Sets completed</span><strong>${totalSets} / ${DRILL_SETS}</strong></div>
+          <div class="brk-row"><span>Time for 2 sets</span><strong>${r.totalElapsed.toFixed(1)}s</strong></div>
+          <div class="brk-row"><span>2 sets within 1 min?</span><strong style="color:${r.onPace ? 'var(--good)' : 'var(--accent-2)'}">${r.onPace ? '✅ Yes — on pace' : '❌ No — too slow'}</strong></div>
+          <div class="brk-row"><span>Average rate</span><strong>${isFinite(r.avgRate) ? r.avgRate : '—'} / min</strong></div>
+          <div class="brk-row"><span>Compressions in zone</span><strong>${inZoneComps} / ${scoredComps}</strong></div>
+          <div class="brk-row"><span>Total compressions</span><strong>${totalComps}</strong></div>
+          <div class="brk-row"><span>Total breaths</span><strong>${totalBreaths}</strong></div>
+        </div>
+
+        <button class="btn modal-again">Practice again</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    const close = () => { overlay.remove(); resetPractice(); };
+    overlay.querySelector('.modal-close').addEventListener('click', close);
+    overlay.querySelector('.modal-again').addEventListener('click', close);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  }
+
+  function removeModal() {
+    const m = document.querySelector('.modal-overlay');
+    if (m) m.remove();
   }
 
   function resetPractice() {
-    practiceOn = false;
     tapTimes = [];
     practiceComps = 0;
     practiceBreaths = 0;
@@ -331,24 +354,26 @@ window.ModuleMetronome = (function () {
     totalBreaths = 0;
     scoredComps = 0;
     inZoneComps = 0;
-    setTimes = [];
     totalSets = 0;
+    drillStart = 0;
+    lastCompTime = 0;
+    drillComplete = false;
     if (els.liveRate) {
       els.liveRate.textContent = '—';
       els.compNum.innerHTML = `0<span class="pstat-of">/30</span>`;
       els.breathNum.innerHTML = `0<span class="pstat-of">/2</span>`;
       els.accuracyNum.innerHTML = `—<span class="pstat-of">%</span>`;
       els.accuracyNum.style.color = '';
-      els.setsMin.innerHTML = `0<span class="pstat-of">/min</span>`;
-      els.setsMin.style.color = '';
+      els.setsNum.innerHTML = `0<span class="pstat-of">/2</span>`;
       els.rateFeedback.className = 'rate-feedback';
-      els.rateFeedback.textContent = 'Tap Spacebar to begin.';
+      els.rateFeedback.textContent = 'Tap Spacebar to begin the drill.';
       updateTotals();
     }
   }
 
   function teardown() {
     stop();
+    removeModal();
     if (keyHandler) {
       document.removeEventListener('keydown', keyHandler);
       keyHandler = null;

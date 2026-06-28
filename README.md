@@ -2,10 +2,10 @@
 
 A browser-based app to **train and practice hands-only and standard CPR**. No install, no build step — open `index.html` and go. Four modules:
 
-1. **Compression Metronome** — a 100–120 BPM audio + visual pacer, plus a **Tap Practice** trainer where you press **Spacebar** for each compression and **B** for each breath. It measures your live rate, tracks 30:2 cycles, and tells you to push faster/slower.
+1. **Compression Metronome** — a 100–120 BPM audio + visual pacer, plus a **Tap Practice Drill**: press **Spacebar** for each compression and **B** for each breath. Complete **2 full sets within one minute** and a popup shows your final score and a full breakdown (accuracy, average rate, time, pace).
 2. **Step-by-Step Guide** — the full adult CPR sequence: scene safety → check → call → compress → breaths → AED.
-3. **Knowledge Quiz** — all 50 First Aid questions (4 choices each) in random order, with instant explanations and scoring.
-4. **Scenario Simulator** — timed emergency scenarios where your choices have consequences and you get feedback.
+3. **Knowledge Quiz** — 50 questions drawn from the BLS 2022 course (multiple-choice, true/false, and "all of the above"), in random order, with instant explanations and scoring.
+4. **Scenario Simulator** — 6 timed emergency scenarios across three difficulty levels (2 beginner, 2 intermediate, 2 advanced) where your choices have consequences and you get feedback.
 
 > ⚠️ **This is a practice and study aid, not a substitute for certified, hands-on CPR training.** Guidelines here follow the 2020 AHA adult Basic Life Support recommendations, but you should take an accredited course (AHA, Red Cross, or equivalent) to be qualified to respond to a real emergency. In a real emergency, call your local emergency number immediately.
 
@@ -38,9 +38,15 @@ cpr-trainer/
 ├── data/
 │   ├── quiz.js         # Quiz question bank
 │   └── scenarios.js    # Scenario definitions
+├── assets/
+│   └── logo.png        # Central Valley JATC seal (header + watermarks)
 ├── LICENSE
 └── README.md
 ```
+
+The Central Valley JATC seal appears as the top-bar emblem and as a faint
+watermark behind every screen and on the results popup. To swap it, replace
+`assets/logo.png` (see `assets/README.txt`).
 
 ## Adding content
 
@@ -59,4 +65,6 @@ Both are plain JavaScript arrays with no tooling required.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+**Proprietary — All Rights Reserved.** Copyright © 2026 Central Valley Roofers,
+Waterproofers & Allied Workers JATC. No copying, modification, redistribution, or
+commercial use without prior written permission. See [LICENSE](LICENSE).

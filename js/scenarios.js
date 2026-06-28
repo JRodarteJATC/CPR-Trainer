@@ -18,7 +18,7 @@ window.ModuleScenarios = (function () {
       <p class="module-sub">Make decisions under time pressure. Pick a scenario to begin.</p>
       <div class="scn-list" id="scnList">
         ${window.SCENARIOS.map((s) => `
-          <div class="card scn-card" data-id="${s.id}">
+          <div class="card scn-card" data-id="${s.id}" data-diff="${s.difficulty}">
             <h3>${s.title}</h3>
             <p>${s.blurb}</p>
             <div class="scn-meta">${s.difficulty} · ${s.stages.length} decisions</div>
