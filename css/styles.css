@@ -42,8 +42,8 @@ body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: var(--logo) center center / min(1300px, 165vw) no-repeat;
-  opacity: 0.30; /* large bright-gold seal spanning the whole page */
+  background: var(--logo) center center / min(820px, 96vmin) no-repeat;
+  opacity: 0.34; /* bright-gold seal watermark — between the two prior sizes, still fits on screen */
   pointer-events: none;
   z-index: 0;
 }
@@ -128,7 +128,8 @@ body > * { position: relative; z-index: 1; }
 
 /* Shared cards / buttons */
 .card {
-  background: linear-gradient(180deg, rgba(35,44,74,0.92), rgba(26,33,56,0.92));
+  background: linear-gradient(180deg, rgba(40,50,82,0.55), rgba(30,38,64,0.55));
+  backdrop-filter: blur(2px);
   border: 1px solid var(--line);
   border-top: 3px solid var(--accent);
   border-radius: var(--radius);
