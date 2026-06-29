@@ -166,6 +166,10 @@ window.ModuleMetronome = (function () {
 
     keyHandler = (e) => {
       if (e.repeat) return;
+      // Don't hijack keys while typing in a text field or while a popup is open.
+      const t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (document.querySelector('.modal-overlay')) return;
       if (e.code === 'Space') { e.preventDefault(); registerCompression(); }
       else if (e.key === 'b' || e.key === 'B') { registerBreath(); }
     };
