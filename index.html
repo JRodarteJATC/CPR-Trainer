@@ -13,12 +13,15 @@
            onerror="this.style.display='none'" />
       <span class="pulse-dot" aria-hidden="true"></span>
       <h1>CPR Trainer</h1>
+      <span class="org-name">Central Valley Roofers, Waterproofers &amp; Allied Workers</span>
+      <span class="org-counties">Fresno · Madera · Kings · Tulare · Kern · Mono · Inyo</span>
     </div>
     <nav class="tabs" id="tabs">
       <button class="tab" data-route="metronome">Metronome</button>
       <button class="tab" data-route="guide">Guide</button>
       <button class="tab" data-route="quiz">Quiz</button>
       <button class="tab" data-route="scenarios">Scenarios</button>
+      <button class="tab" data-route="scores">Scores</button>
     </nav>
   </header>
 
@@ -39,11 +42,14 @@
   <!-- Data -->
   <script src="data/quiz.js"></script>
   <script src="data/scenarios.js"></script>
+  <!-- Scores engine (before modules that record) -->
+  <script src="js/scores.js"></script>
   <!-- Modules -->
   <script src="js/metronome.js"></script>
   <script src="js/guide.js"></script>
   <script src="js/quiz.js"></script>
   <script src="js/scenarios.js"></script>
+  <script src="js/scoresview.js"></script>
   <!-- Router (last) -->
   <script src="js/app.js"></script>
 </body>

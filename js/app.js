@@ -8,6 +8,7 @@
     guide: () => window.ModuleGuide,
     quiz: () => window.ModuleQuiz,
     scenarios: () => window.ModuleScenarios,
+    scores: () => window.ModuleScores,
   };
 
   let current = null;

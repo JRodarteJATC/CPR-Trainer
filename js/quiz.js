@@ -22,6 +22,16 @@ window.ModuleQuiz = (function () {
     renderQuestion();
   }
 
+  // Ask for the name first, then start.
+  function startGate() {
+    if (!window.CPRScores) return start();
+    window.CPRScores.renderStartScreen(view, {
+      title: 'Knowledge Quiz',
+      subtitle: `${window.QUIZ_QUESTIONS.length} questions in random order — multiple choice, true/false, and "all of the above."`,
+      button: 'Start Quiz'
+    }, start);
+  }
+
   function renderQuestion() {
     answered = false;
     const q = window.QUIZ_QUESTIONS[order[idx]];
@@ -79,19 +89,38 @@ window.ModuleQuiz = (function () {
     let msg = pct >= 90 ? "Excellent — you know this cold."
             : pct >= 70 ? "Solid. Review the misses and try again."
             : "Keep practicing — revisit the Guide tab.";
+
+    // Log the attempt under the current student's name.
+    if (window.CPRScores) {
+      window.CPRScores.record({
+        module: 'Knowledge Quiz',
+        score: `${score} / ${order.length}`,
+        percent: pct,
+        detail: `${score} correct of ${order.length}`
+      });
+    }
+    const saved = window.CPRScores
+      ? `<div class="cue" style="margin-top:6px;">📋 Saved for <strong>${window.CPRScores.getName() || 'Anonymous'}</strong> — see the Scores tab.</div>`
+      : '';
+
     view.innerHTML = `
       <h2 class="module-title">Knowledge Quiz</h2>
       <div class="card" style="text-align:center;">
         <div class="score-big">${score} / ${order.length}</div>
         <div class="score-sub">${pct}% · ${msg}</div>
-        <button class="btn" id="retry">Try again</button>
+        ${saved}
+        <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:14px;">
+          <button class="btn" id="retry">Same student — retry</button>
+          <button class="btn secondary" id="newstudent">New student</button>
+        </div>
       </div>`;
     view.querySelector('#retry').addEventListener('click', start);
+    view.querySelector('#newstudent').addEventListener('click', startGate);
   }
 
   function render(v) {
     view = v;
-    start();
+    startGate();
   }
 
   return { render };

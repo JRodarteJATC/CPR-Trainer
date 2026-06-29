@@ -11,11 +11,23 @@ window.ModuleScenarios = (function () {
     if (timerId) { clearInterval(timerId); timerId = null; }
   }
 
+  // Ask for the name first, then show the scenario menu.
+  function startGate() {
+    if (!window.CPRScores) return renderMenu();
+    window.CPRScores.renderStartScreen(view, {
+      title: 'Scenario Simulator',
+      subtitle: 'Timed emergency scenarios across beginner, intermediate, and advanced levels.',
+      button: 'Continue'
+    }, renderMenu);
+  }
+
   function renderMenu() {
     clearTimer();
+    const who = window.CPRScores && window.CPRScores.getName();
     view.innerHTML = `
       <h2 class="module-title">Scenario Simulator</h2>
-      <p class="module-sub">Make decisions under time pressure. Pick a scenario to begin.</p>
+      <p class="module-sub">${who ? `Playing as <strong>${who}</strong>. ` : ''}Pick a scenario to begin.
+        ${who ? '<a href="#" id="newStudentLink">New student</a>' : ''}</p>
       <div class="scn-list" id="scnList">
         ${window.SCENARIOS.map((s) => `
           <div class="card scn-card" data-id="${s.id}" data-diff="${s.difficulty}">
@@ -28,6 +40,8 @@ window.ModuleScenarios = (function () {
       const card = e.target.closest('.scn-card');
       if (card) startScenario(card.dataset.id);
     });
+    const link = view.querySelector('#newStudentLink');
+    if (link) link.addEventListener('click', (e) => { e.preventDefault(); startGate(); });
   }
 
   function startScenario(id) {
@@ -136,6 +150,15 @@ window.ModuleScenarios = (function () {
     const verdict = pct >= 90 ? "Outstanding response — you gave this person their best chance."
                   : pct >= 60 ? "Good effort. Tighten up the missed steps and run it again."
                   : "Review the Guide and try again — speed and the right sequence matter.";
+
+    if (window.CPRScores) {
+      window.CPRScores.record({
+        module: `Scenario: ${scenario.title}`,
+        score: `${correctCount} / ${total}`,
+        percent: pct,
+        detail: `${scenario.difficulty} · ${correctCount} of ${total} correct decisions`
+      });
+    }
     view.innerHTML = `
       <h2 class="module-title">${scenario.title} — Outcome</h2>
       <div class="card" style="text-align:center;">
@@ -152,7 +175,7 @@ window.ModuleScenarios = (function () {
 
   function render(v) {
     view = v;
-    renderMenu();
+    startGate();
   }
 
   function teardown() { clearTimer(); }

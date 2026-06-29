@@ -6,6 +6,7 @@ A browser-based app to **train and practice hands-only and standard CPR**. No in
 2. **Step-by-Step Guide** — the full adult CPR sequence: scene safety → check → call → compress → breaths → AED.
 3. **Knowledge Quiz** — 50 questions drawn from the BLS 2022 course (multiple-choice, true/false, and "all of the above"), in random order, with instant explanations and scoring.
 4. **Scenario Simulator** — 6 timed emergency scenarios across three difficulty levels (2 beginner, 2 intermediate, 2 advanced) where your choices have consequences and you get feedback.
+5. **Scores** — each activity opens with a **Start screen that asks the student's name**, so a shared computer can be used by the whole class. Every quiz, drill, and scenario is logged with name, date, and score; students retake as often as they like. The Scores tab keeps **all users** on that computer, and you can **Print** a report or **export to Excel (CSV)**.
 
 > ⚠️ **This is a practice and study aid, not a substitute for certified, hands-on CPR training.** Guidelines here follow the 2020 AHA adult Basic Life Support recommendations, but you should take an accredited course (AHA, Red Cross, or equivalent) to be qualified to respond to a real emergency. In a real emergency, call your local emergency number immediately.
 
